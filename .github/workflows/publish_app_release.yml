@@ -1,9 +1,16 @@
 name: app-build-action
-#推送Tag时触发
+# 推送Tag时触发，并增加手动触发按钮（带版本号输入）
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      release_version:
+        description: '手动触发时使用的版本号（若为空则使用 assets/app_version.json 中的 version）'
+        required: false
+        default: ''
+
 jobs:
   build-mac-ios-android:
     runs-on: macos-latest
@@ -122,16 +129,19 @@ jobs:
         uses: juliangruber/read-file-action@v1
         with:
           path: assets/app_version.json
+
+      # 输出最终使用的版本（如果在手动触发时填写了 release_version 则优先使用）
       - name: Echo version
-        run: echo "${{ fromJson(steps.version.outputs.content).version }}"
+        run: echo "${{ github.event.inputs.release_version != '' && github.event.inputs.release_version || fromJson(steps.version.outputs.content).version }}"
+
       - name: Echo version content
         run: echo "${{ fromJson(steps.version.outputs.content).version_desc }}"
 
-      #上传至Release
+      #上传至Release（name 使用手动输入的 release_version 优先，否则使用文件中的 version）
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          name: "${{ fromJson(steps.version.outputs.content).version }}"
+          name: "${{ github.event.inputs.release_version != '' && github.event.inputs.release_version || fromJson(steps.version.outputs.content).version }}"
           body: "${{ fromJson(steps.version.outputs.content).version_desc }}"
           prerelease: ${{ fromJson(steps.version.outputs.content).prerelease }}
           token: ${{ secrets.TOKEN }}
@@ -197,8 +207,9 @@ jobs:
         uses: juliangruber/read-file-action@v1
         with:
           path: assets/app_version.json
+
       - name: Echo version
-        run: echo "${{ fromJson(steps.version.outputs.content).version }}"
+        run: echo "${{ github.event.inputs.release_version != '' && github.event.inputs.release_version || fromJson(steps.version.outputs.content).version }}"
       - name: Echo version content
         run: echo "${{ fromJson(steps.version.outputs.content).version_desc }}"
 
@@ -206,7 +217,7 @@ jobs:
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          name: "${{ fromJson(steps.version.outputs.content).version }}"
+          name: "${{ github.event.inputs.release_version != '' && github.event.inputs.release_version || fromJson(steps.version.outputs.content).version }}"
           body: "${{ fromJson(steps.version.outputs.content).version_desc }}"
           prerelease: ${{ fromJson(steps.version.outputs.content).prerelease }}
           token: ${{ secrets.TOKEN }}
@@ -262,8 +273,9 @@ jobs:
         uses: juliangruber/read-file-action@v1
         with:
           path: assets/app_version.json
+
       - name: Echo version
-        run: echo "${{ fromJson(steps.version.outputs.content).version }}"
+        run: echo "${{ github.event.inputs.release_version != '' && github.event.inputs.release_version || fromJson(steps.version.outputs.content).version }}"
       - name: Echo version content
         run: echo "${{ fromJson(steps.version.outputs.content).version_desc }}"
 
@@ -271,7 +283,7 @@ jobs:
       - name: Upload Release
         uses: softprops/action-gh-release@v1
         with:
-          name: "${{ fromJson(steps.version.outputs.content).version }}"
+          name: "${{ github.event.inputs.release_version != '' && github.event.inputs.release_version || fromJson(steps.version.outputs.content).version }}"
           body: "${{ fromJson(steps.version.outputs.content).version_desc }}"
           prerelease: ${{ fromJson(steps.version.outputs.content).prerelease }}
           token: ${{ secrets.TOKEN }}
